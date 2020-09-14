@@ -28,6 +28,10 @@ public class StudentListManager
             }
         }
     }
+    public void Clear()
+    {
+        _newStudents.clear();
+    }
     public void Remove(String first, String last)
     {
         ContainRemove(first, last, true);

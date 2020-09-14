@@ -1,9 +1,10 @@
 import java.util.*;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
-
+import java.util.Random;
 public class Session
 {
+    private static Map map = new HashMap<>();
     public enum eRating {SKIP(0), EXCEPTIONAL(1), SATISFACTORY(2), UNSATISFCTORY(3);
         //ABSURD way to be able to cast an enum as an INT in Java.
         private int value;
@@ -11,14 +12,25 @@ public class Session
         {
             this.value=value;
         }
+        static {
+            for (eRating enumType : eRating.values()) {
+                map.put(enumType.value, enumType);
+            }
+        }
+
+        public static eRating valueOf(int pageType) {
+            return (eRating) map.get(pageType);
+        }
+
     };
 
 
     private aClass _class;
     private Student _currentStudent;
     HashMap<Student, ArrayList<Integer>> _studentRatings;
+    Random random = new Random();
 
-
+    /** A Session keeps track of students and the quality of their responses to questions during the session  */
     public Session(aClass c)
     {
         _class = c;
@@ -34,13 +46,14 @@ public class Session
            _studentRatings.put(s,_ratings);
         }
     }
+    /** Gets the date used for filename  */
     private String GetDate()
     {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
-        return now.getMonth()+"_" + now.getYear();
+        return now.getMonth()+"_" + now.getYear() + "_"+now.getHour()+":"+now.getMinute() ;
     }
-
+    /** Selects a student at random from the session  */
     public Student SelectRandom()
     {
         if(_class==null)
@@ -53,13 +66,16 @@ public class Session
 
         int max= studentList.size();
 
-        int choice= (int)Math.random() * (max) +0;
+        int choice= random.nextInt(max);
+
+        System.out.println(max+ " --> CHOICE WAS  =" +choice);
+
         _currentStudent= studentList.get(choice);
 
         return  _currentStudent;
 
     }
-
+    /** Returns the total amount of questions a student has been asked in this session  */
     public int GetQuestionAsked(Student s)
     {
         if(_class==null)
@@ -79,7 +95,7 @@ public class Session
         return total;
 
     }
-
+    /** Increments the number of occurances this student has for said rating  */
     public void AssignRating(eRating rating)
     {
         //based on current student so GUI doesn't have to keep track of
@@ -90,6 +106,7 @@ public class Session
             ratings.set(index, ratings.get(index) + 1);
         }
     }
+    /** Returns the number of occurances this student has for said rating  */
     public int GetRating(Student s, eRating rating)
     {
         int amnt = 0;
@@ -101,12 +118,10 @@ public class Session
         }
         return amnt;
     }
+    /** Saves Record of Session OnApplicationClose */
     public void OnClose()
     {
         FileManager fc= new FileManager(GetDate()+"_"+_class.GetClassName());
-       try
-           { fc.CreateSessionFile(_class, this );}
-       catch(Exception e )
-           {System.out.println("Error writing file");}
+        fc.CreateSessionFile(_class, this );
     }
 }

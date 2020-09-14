@@ -8,6 +8,8 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 import javax.swing.JPopupMenu;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class ClassTrackerGUI
 {
@@ -82,13 +84,18 @@ public class ClassTrackerGUI
         mainPanel.add(sidePanel, BorderLayout.WEST);
         mainPanel.add(centerPanel, BorderLayout.CENTER);
 
-
+        ShowCenterInputFrame(false);
         mainFrame.add(mainPanel,  BorderLayout.CENTER);
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setTitle("358 Classes HW1    by Steve Datz");
         mainFrame.pack();
         mainFrame.setVisible(true);
         mainFrame.setSize(1280, 720);
+        mainFrame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent windowEvent) {
+                OnApplicationClose();
+            }
+        });
     }
 
     /**
@@ -125,6 +132,9 @@ public class ClassTrackerGUI
         sidePanel.add(listScroller);
         AddClassesFromFile();
 
+        listScroller.setBorder(BorderFactory.createRaisedBevelBorder());
+        listScroller.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+
         _listClasses.addListSelectionListener(new javax.swing.event.ListSelectionListener()
         {
             @Override
@@ -147,6 +157,7 @@ public class ClassTrackerGUI
                     else
                         _popupCreate.show(_listClasses, e.getX(), e.getY());
                 }
+                /* Broken fix - cant figure out how to click empty space of list, always selected last element in JList
                 else if(e.getButton()==1)
                 {
                     //??DOESNT WORK
@@ -155,7 +166,7 @@ public class ClassTrackerGUI
                     System.out.println("INDEX="+ index);
                     if(index==0)
                         _listClasses.clearSelection();
-                }
+                }*/
             }
             @Override
             public void mousePressed(MouseEvent e) { }
@@ -172,9 +183,18 @@ public class ClassTrackerGUI
     private void AddClassesFromFile()
     {
         _classes= new HashMap<>();
-        DefaultListModel gm = (DefaultListModel)_listClasses.getModel();
+        DefaultListModel dm = (DefaultListModel)_listClasses.getModel();
 
         //TODO add from file
+        for(aClass c: _fm.ParseClassFile())
+        {
+            if(c!=null)
+            {
+                _classes.put(c.GetClassName(), c);
+                dm.addElement(c.GetClassName());
+            }
+
+        }
     }
 
     /**
@@ -476,7 +496,9 @@ public class ClassTrackerGUI
                 if(e.getActionCommand().equals("comboBoxChanged")&& jcb.getSelectedIndex()!=0)
                 {
                     //TODO
-                    System.out.println("Change rating pick next student");
+                    System.out.println("Change rating pick next student = ("+jcb.getSelectedIndex()+") " + Session.eRating.valueOf(jcb.getSelectedIndex()-1));
+                    _session.AssignRating(Session.eRating.valueOf(jcb.getSelectedIndex()-1));
+                    GetRandomStudent();
                 }
             }
         });
@@ -495,6 +517,8 @@ public class ClassTrackerGUI
             public void actionPerformed(ActionEvent e)
             {
                 //SAVE DATA TODO
+                if(_session!=null)
+                    _session.OnClose();
                 SwitchToAdd();
             }
         });
@@ -537,6 +561,11 @@ public class ClassTrackerGUI
         mainPanel.remove(centerPanel);
         mainPanel.add(centerPanelALT, BorderLayout.CENTER);
         centerPanelALT.setVisible(true);
+    }
+
+    private void ShowCenterInputFrame(boolean cond)
+    {
+        centerPanel.setVisible(cond);
     }
 
     /**
@@ -600,8 +629,9 @@ public class ClassTrackerGUI
             LinkedList<String> seen = new LinkedList<String>();
             if(file.isFile())
             {
-                while ((csvReader.readLine()) != null) {
-                    String row =csvReader.readLine();
+                String row;
+                while ((row=csvReader.readLine()) != null)
+                {
                     String first= row.substring(0, row.indexOf(","));
                     String last= row.substring(row.indexOf(",")+1, row.length());
                    // System.out.println("FIRST: " +first);
@@ -612,6 +642,8 @@ public class ClassTrackerGUI
                         AddEntryToList(_listAddFromFile, fullName);
                         seen.add(fullName);
                     }
+                    else
+                        JOptionPane.showMessageDialog(null, "Duplicate Entry Found : " + fullName);
 
                 }
             }
@@ -637,7 +669,16 @@ public class ClassTrackerGUI
                 CreateNewClass();
             }
         });
-
+        JMenuItem createClass2 = new JMenuItem("Create Class");
+        _popupExisting.add(createClass2);
+        createClass2.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                CreateNewClass();
+            }
+        });
 
         //EDIT
         JMenuItem editClass= new JMenuItem("Edit Class");
@@ -650,12 +691,7 @@ public class ClassTrackerGUI
             public void actionPerformed(ActionEvent e)
             {
                 //ToDo
-              String currClass= _listClasses.getSelectedValue().toString();
-              aClass c= _classes.get(currClass);
-              if(c!=null)
-                StartNewSession(c);
-              else
-                  JOptionPane.showMessageDialog(null, "Error Finding Class");
+                JOptionPane.showMessageDialog(null, "Feature Not Implemented");
             }
         });
 
@@ -669,8 +705,30 @@ public class ClassTrackerGUI
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                //ToDo
-                //start class
+                String currClass= _listClasses.getSelectedValue().toString();
+                aClass c= _classes.get(currClass);
+                if(c!=null)
+                    StartNewSession(c);
+                else
+                    JOptionPane.showMessageDialog(null, "Error Finding Class");
+            }
+        });
+
+        //START
+        JMenuItem deleteClass= new JMenuItem("Delete Class");
+        _popupExisting.add(deleteClass);
+
+        //events
+        deleteClass.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                String currClass= _listClasses.getSelectedValue().toString();
+                _classes.remove(currClass);
+                DefaultListModel dm = (DefaultListModel) _listClasses.getModel();
+                dm.remove(_listClasses.getSelectedIndex());
+               // JOptionPane.showMessageDialog(null, "Feature Not Implemented");
             }
         });
 
@@ -683,6 +741,7 @@ public class ClassTrackerGUI
         System.out.println("String=" + name);
 
         ClearAndRefresh();
+        ShowCenterInputFrame(true);
         DefaultListModel dm = (DefaultListModel) _listClasses.getModel();
         dm.addElement(name);
         _labelClassName.setText(name);
@@ -691,7 +750,6 @@ public class ClassTrackerGUI
         _classes.put(name, c);
 
     }
-
 
     /** Saves the Current Students from SLM via FILE**/
     private void SaveCurrentClass()
@@ -707,18 +765,19 @@ public class ClassTrackerGUI
                 for(Student s: _slm.GetStudents())
                     c.Add(s);
 
-                if (_fm.CreateClassFile(c))
                     message = "Class Saved";
-                else
-                    message = "Error: Not Saved";
+                    _slm.Clear();
+                ShowCenterInputFrame(false);
             }
         }
         JOptionPane.showMessageDialog(null, message);
 
 
+
     }
     private void StartNewSession(aClass c)
     {
+        System.out.println("Calling start new session");
         if(_session!=null)
         {
             //Save off old session
@@ -726,6 +785,10 @@ public class ClassTrackerGUI
         _session= new Session(c);
         SwitchToMonitor();
         _labelMonitorClassName.setText(c.GetClassName());
+        GetRandomStudent();
+    }
+    private void GetRandomStudent()
+    {
         Student s= _session.SelectRandom();
         int Qs= _session.GetQuestionAsked(s);
         _labelMonitorCurrStudent.setText(s.GetFirstName()+", " +s.GetLastName() +"   Question Answered: " + Qs);
@@ -744,7 +807,6 @@ public class ClassTrackerGUI
 
         ClearList(_listAddFromFile);
         ClearList(_listNewStudents);
-
     }
     private void ClearList(JList list)
     {
@@ -772,6 +834,18 @@ public class ClassTrackerGUI
            return null;
     }
 
+
+    private void OnApplicationClose()
+    {
+        //Save classes:
+        LinkedList<aClass> _saveable= new LinkedList<>();
+        for(aClass c : _classes.values())
+            _saveable.add(c);
+
+        _fm.CreateClassFile(_saveable);
+        if(_session!=null)
+            _session.OnClose();
+    }
 
 
 }
