@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Random;
 public class Session
 {
+    /** A Big mess of a way to give enums the functionality they have in C#  */
     private static Map map = new HashMap<>();
     public enum eRating {SKIP(0), EXCEPTIONAL(1), SATISFACTORY(2), UNSATISFCTORY(3);
         //ABSURD way to be able to cast an enum as an INT in Java.

@@ -1,3 +1,11 @@
+--spanish--
+firstname, lastname
+Konstance, Wicks
+Bird, Skace
+Mada, Sisey
+Allegra, Hildrew
+Isabelle, Ren
+Aleksandr, Claire
 --TEST1--
 firstname, lastname
 --C2--
